@@ -1,4 +1,4 @@
-// tuyue_h5errorserv project main.go
+// gojsmap project main.go
 package main
 
 import (
@@ -13,12 +13,12 @@ import (
 
 func initCommonServer() {
 	var err error
-	err = global.IpServer.LoadData("./data/ip2region.db")
+	err = global.IpServer.LoadData("data/ip2region.db")
 	if err != nil {
 		log.Panic(err)
 	}
 
-	err = global.SourceMapManager.Parse("./source_map/project.js.map")
+	err = global.SourceMapManager.Parse(global.ProjectConfig.SourceMap)
 	if err != nil {
 		log.Panic(err)
 	}

@@ -19,9 +19,10 @@ type IniConfig struct {
 		CertFile string
 		KeyFile  string
 	}
-	Port     int64
-	Debug    int64
-	SplitLog int
+	Port      int64
+	Debug     int64
+	SplitLog  int
+	SourceMap string
 }
 
 // NewIniConfig ...
@@ -35,40 +36,45 @@ func NewIniConfig() *IniConfig {
 // LoadIniConfig ...
 func LoadIniConfig(file string) (*IniConfig, error) {
 	cfg := NewIniConfig()
-	er := cfg.Load(file)
-	return cfg, er
+	err := cfg.Load(file)
+	return cfg, err
 }
 
 // Load ...
 func (c *IniConfig) Load(file string) error {
 	var (
-		er error
-		f  *goconfig.ConfigFile
+		err error
+		f   *goconfig.ConfigFile
 	)
 
-	f, er = goconfig.LoadConfigFile(file)
-	if er != nil {
+	f, err = goconfig.LoadConfigFile(file)
+	if err != nil {
 		return fmt.Errorf("读取配置文件失败[%s]", file)
 	}
 
-	er = c.readCfg(f)
-	if er != nil {
-		return er
+	err = c.readCfg(f)
+	if err != nil {
+		return err
 	}
 
-	er = c.readTlsCfg(f)
-	if er != nil {
-		return er
+	err = c.readTlsCfg(f)
+	if err != nil {
+		return err
 	}
 
-	// er = c.readMysqlCfg(f)
-	// if er != nil {
-	// 	return er
+	err = c.readSourceMapCfg(f)
+	if err != nil {
+		return err
+	}
+
+	// err = c.readMysqlCfg(f)
+	// if err != nil {
+	// 	return err
 	// }
 
-	// er = c.readRdsCfg(f)
-	// if er != nil {
-	// 	return er
+	// err = c.readRdsCfg(f)
+	// if err != nil {
+	// 	return err
 	// }
 
 	return nil
@@ -76,7 +82,7 @@ func (c *IniConfig) Load(file string) error {
 
 func (c *IniConfig) readCfg(f *goconfig.ConfigFile) error {
 	var (
-		er       error
+		err      error
 		port     string
 		debug    string
 		splitlog string
@@ -84,34 +90,48 @@ func (c *IniConfig) readCfg(f *goconfig.ConfigFile) error {
 
 	section := "main"
 
-	port, er = f.GetValue(section, "port")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "port", er.Error())
+	port, err = f.GetValue(section, "port")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "port", err.Error())
 	}
 
-	c.Port, er = strconv.ParseInt(port, 10, 64)
-	if er != nil {
-		return errors.New(er.Error())
+	c.Port, err = strconv.ParseInt(port, 10, 64)
+	if err != nil {
+		return errors.New(err.Error())
 	}
 
-	debug, er = f.GetValue(section, "debug")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "debug", er.Error())
+	debug, err = f.GetValue(section, "debug")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "debug", err.Error())
 	}
 
-	c.Debug, er = strconv.ParseInt(debug, 10, 64)
-	if er != nil {
-		return errors.New(er.Error())
+	c.Debug, err = strconv.ParseInt(debug, 10, 64)
+	if err != nil {
+		return errors.New(err.Error())
 	}
 
-	splitlog, er = f.GetValue(section, "splitlog")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "splitlog", er.Error())
+	splitlog, err = f.GetValue(section, "splitlog")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "splitlog", err.Error())
 	}
 
-	c.SplitLog, er = strconv.Atoi(splitlog)
-	if er != nil {
-		return errors.New(er.Error())
+	c.SplitLog, err = strconv.Atoi(splitlog)
+	if err != nil {
+		return errors.New(err.Error())
+	}
+
+	c.SourceMap, err = f.GetValue(section, "source_map")
+
+	return nil
+}
+
+func (c *IniConfig) readSourceMapCfg(f *goconfig.ConfigFile) error {
+	section := "source_map"
+
+	var err error
+	c.SourceMap, err = f.GetValue(section, "file")
+	if err != nil {
+		return errors.New(err.Error())
 	}
 
 	return nil
@@ -119,48 +139,48 @@ func (c *IniConfig) readCfg(f *goconfig.ConfigFile) error {
 
 func (c *IniConfig) readMysqlCfg(f *goconfig.ConfigFile) error {
 	var (
-		er           error
+		err          error
 		maxOdleConns string
 		maxOpenConns string
 	)
 
 	section := "mysql"
-	c.MysqlCfg.Username, er = f.GetValue(section, "username")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "username", er.Error())
+	c.MysqlCfg.Username, err = f.GetValue(section, "username")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "username", err.Error())
 	}
 
-	c.MysqlCfg.Password, er = f.GetValue(section, "password")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "password", er.Error())
+	c.MysqlCfg.Password, err = f.GetValue(section, "password")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "password", err.Error())
 	}
 
-	c.MysqlCfg.Host, er = f.GetValue(section, "host")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "host", er.Error())
+	c.MysqlCfg.Host, err = f.GetValue(section, "host")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "host", err.Error())
 	}
 
-	c.MysqlCfg.Database, er = f.GetValue(section, "database")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "database", er.Error())
+	c.MysqlCfg.Database, err = f.GetValue(section, "database")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "database", err.Error())
 	}
 
-	maxOdleConns, er = f.GetValue(section, "MaxOdleConns")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "MaxOdleConns", er.Error())
+	maxOdleConns, err = f.GetValue(section, "MaxOdleConns")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "MaxOdleConns", err.Error())
 	}
-	c.MysqlCfg.MaxOdleConns, er = strconv.ParseInt(maxOdleConns, 10, 64)
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "MaxOdleConns", er.Error())
+	c.MysqlCfg.MaxOdleConns, err = strconv.ParseInt(maxOdleConns, 10, 64)
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "MaxOdleConns", err.Error())
 	}
 
-	maxOpenConns, er = f.GetValue(section, "MaxOpenConns")
-	if er != nil {
-		return er
+	maxOpenConns, err = f.GetValue(section, "MaxOpenConns")
+	if err != nil {
+		return err
 	}
-	c.MysqlCfg.MaxOpenConns, er = strconv.ParseInt(maxOpenConns, 10, 64)
-	if er != nil {
-		return er
+	c.MysqlCfg.MaxOpenConns, err = strconv.ParseInt(maxOpenConns, 10, 64)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -168,81 +188,81 @@ func (c *IniConfig) readMysqlCfg(f *goconfig.ConfigFile) error {
 
 func (c *IniConfig) readRdsCfg(f *goconfig.ConfigFile) error {
 	var (
-		er           error
+		err          error
 		Db           string
 		PoolSize     string
 		MinIdleConns string
 	)
 
 	section := "redis"
-	c.RdsCfg.Host, er = f.GetValue(section, "host")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "host", er.Error())
+	c.RdsCfg.Host, err = f.GetValue(section, "host")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "host", err.Error())
 	}
 
-	c.RdsCfg.Psd, er = f.GetValue(section, "psd")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "psd", er.Error())
+	c.RdsCfg.Psd, err = f.GetValue(section, "psd")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "psd", err.Error())
 	}
 
-	Db, er = f.GetValue(section, "db")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "db", er.Error())
+	Db, err = f.GetValue(section, "db")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "db", err.Error())
 	}
-	c.RdsCfg.Db, er = strconv.ParseInt(Db, 10, 64)
-	if er != nil {
-		return er
-	}
-
-	PoolSize, er = f.GetValue(section, "poolSize")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "poolSize", er.Error())
-	}
-	c.RdsCfg.PoolSize, er = strconv.ParseInt(PoolSize, 10, 64)
-	if er != nil {
-		return er
+	c.RdsCfg.Db, err = strconv.ParseInt(Db, 10, 64)
+	if err != nil {
+		return err
 	}
 
-	MinIdleConns, er = f.GetValue(section, "minIdleConns")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "minIdleConns", er.Error())
+	PoolSize, err = f.GetValue(section, "poolSize")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "poolSize", err.Error())
 	}
-	c.RdsCfg.MinIdleConns, er = strconv.ParseInt(MinIdleConns, 10, 64)
-	if er != nil {
-		return er
+	c.RdsCfg.PoolSize, err = strconv.ParseInt(PoolSize, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	MinIdleConns, err = f.GetValue(section, "minIdleConns")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "minIdleConns", err.Error())
+	}
+	c.RdsCfg.MinIdleConns, err = strconv.ParseInt(MinIdleConns, 10, 64)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 func (c *IniConfig) readTlsCfg(f *goconfig.ConfigFile) error {
 	var (
-		er     error
+		err    error
 		enable string
 	)
 
 	section := "tls"
 
-	enable, er = f.GetValue(section, "enable")
-	if er != nil {
-		return fmt.Errorf("无法获取键值(%s):%s", "port", er.Error())
+	enable, err = f.GetValue(section, "enable")
+	if err != nil {
+		return fmt.Errorf("无法获取键值(%s):%s", "port", err.Error())
 	}
-	c.TLS.Enable, er = strconv.ParseBool(enable)
-	if er != nil {
-		return errors.New(er.Error())
+	c.TLS.Enable, err = strconv.ParseBool(enable)
+	if err != nil {
+		return errors.New(err.Error())
 	}
 
 	if c.TLS.Enable {
-		c.TLS.CertFile, er = f.GetValue(section, "certFile")
-		if er != nil {
-			return fmt.Errorf("无法获取键值(%s):%s", "certFile", er.Error())
+		c.TLS.CertFile, err = f.GetValue(section, "certFile")
+		if err != nil {
+			return fmt.Errorf("无法获取键值(%s):%s", "certFile", err.Error())
 		}
 		if c.TLS.CertFile == "" {
 			return errors.New("cretFile is empty")
 		}
 
-		c.TLS.KeyFile, er = f.GetValue(section, "keyFile")
-		if er != nil {
-			return fmt.Errorf("无法获取键值(%s):%s", "keyFile", er.Error())
+		c.TLS.KeyFile, err = f.GetValue(section, "keyFile")
+		if err != nil {
+			return fmt.Errorf("无法获取键值(%s):%s", "keyFile", err.Error())
 		}
 		if c.TLS.KeyFile == "" {
 			return errors.New("keyFile is empty")
